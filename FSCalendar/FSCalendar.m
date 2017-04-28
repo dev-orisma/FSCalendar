@@ -152,10 +152,10 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
 }
 
 - (void)initialize
-{   
+{
     _appearance = [[FSCalendarAppearance alloc] init];
     _appearance.calendar = self;
-    
+
     _gregorian = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
     _components = [[NSDateComponents alloc] init];
     _formatter = [[NSDateFormatter alloc] init];
@@ -164,26 +164,26 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
     _timeZone = [NSTimeZone localTimeZone];
     _firstWeekday = 1;
     [self invalidateDateTools];
-    
+
     _today = [self.gregorian dateBySettingHour:0 minute:0 second:0 ofDate:[NSDate date] options:0];
     _currentPage = [self.gregorian fs_firstDayOfMonth:_today];
-    
+
     _minimumDate = [self.formatter dateFromString:@"1970-01-01"];
     _maximumDate = [self.formatter dateFromString:@"2099-12-31"];
-    
+
     _headerHeight     = FSCalendarAutomaticDimension;
     _weekdayHeight    = FSCalendarAutomaticDimension;
-    
+
     _preferredHeaderHeight  = FSCalendarAutomaticDimension;
     _preferredWeekdayHeight = FSCalendarAutomaticDimension;
     _preferredRowHeight     = FSCalendarAutomaticDimension;
     _lineHeightMultiplier    = 1.0;
-    
+
     _scrollDirection = FSCalendarScrollDirectionHorizontal;
     _scope = FSCalendarScopeMonth;
     _selectedDates = [NSMutableArray arrayWithCapacity:1];
     _visibleSectionHeaders = [NSMapTable weakToWeakObjectsMapTable];
-    
+
     _pagingEnabled = YES;
     _scrollEnabled = YES;
     _needsAdjustingViewFrame = YES;
@@ -191,24 +191,24 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
     _needsRequestingBoundingDates = YES;
     _orientation = self.currentCalendarOrientation;
     _placeholderType = FSCalendarPlaceholderTypeFillSixRows;
-    
+
     _dataSourceProxy = [FSCalendarDelegationFactory dataSourceProxy];
     _delegateProxy = [FSCalendarDelegationFactory delegateProxy];
-    
+
     UIView *contentView = [[UIView alloc] initWithFrame:CGRectZero];
     contentView.backgroundColor = [UIColor clearColor];
     [self addSubview:contentView];
     self.contentView = contentView;
-    
+
     UIView *daysContainer = [[UIView alloc] initWithFrame:CGRectZero];
     daysContainer.backgroundColor = [UIColor clearColor];
     daysContainer.clipsToBounds = YES;
     [contentView addSubview:daysContainer];
     self.daysContainer = daysContainer;
-    
+
     FSCalendarCollectionViewLayout *collectionViewLayout = [[FSCalendarCollectionViewLayout alloc] init];
     collectionViewLayout.calendar = self;
-    
+
     FSCalendarCollectionView *collectionView = [[FSCalendarCollectionView alloc] initWithFrame:CGRectZero
                                                                           collectionViewLayout:collectionViewLayout];
     collectionView.dataSource = self;
@@ -226,39 +226,39 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
     [daysContainer addSubview:collectionView];
     self.collectionView = collectionView;
     self.collectionViewLayout = collectionViewLayout;
-    
+
     if (!FSCalendarInAppExtension) {
-        
+
         UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
         view.backgroundColor = FSCalendarStandardLineColor;
         [self addSubview:view];
         self.topBorder = view;
-        
+
         view = [[UIView alloc] initWithFrame:CGRectZero];
         view.backgroundColor = FSCalendarStandardLineColor;
         [self addSubview:view];
         self.bottomBorder = view;
-        
+
     }
-    
+
     [self invalidateLayout];
     [self registerMainRunloopObserver];
-    
+
     // Assistants
     self.transitionCoordinator = [[FSCalendarTransitionCoordinator alloc] initWithCalendar:self];
     self.calculator = [[FSCalendarCalculator alloc] initWithCalendar:self];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationDidChange:) name:UIDeviceOrientationDidChangeNotification object:nil];
-    
+
 }
 
 - (void)dealloc
 {
     _collectionView.delegate = nil;
     _collectionView.dataSource = nil;
-    
+
     CFRunLoopRemoveObserver(CFRunLoopGetCurrent(), self.runLoopObserver, kCFRunLoopCommonModes);
-    
+
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
 }
 
@@ -296,26 +296,26 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
             return [self.collectionViewLayout setValue:value forKey:key];
         }
     }
-    
+
     return [super setValue:value forUndefinedKey:key];
-    
+
 }
 
 - (void)layoutSubviews
 {
     [super layoutSubviews];
-    
+
     if (_needsAdjustingViewFrame) {
         _needsAdjustingViewFrame = NO;
-        
+
         if (CGSizeEqualToSize(_transitionCoordinator.cachedMonthSize, CGSizeZero)) {
             _transitionCoordinator.cachedMonthSize = self.frame.size;
         }
-        
+
         BOOL needsAdjustingBoundingRect = (self.scope == FSCalendarScopeMonth) &&
                                           (self.placeholderType != FSCalendarPlaceholderTypeFillSixRows) &&
                                           !self.hasValidateVisibleLayout;
-        
+
         if (_scopeHandle) {
             CGFloat scopeHandleHeight = self.transitionCoordinator.cachedMonthSize.height*0.08;
             _contentView.frame = CGRectMake(0, 0, self.fs_width, self.fs_height-scopeHandleHeight);
@@ -331,7 +331,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
         if (self.scrollDirection == UICollectionViewScrollDirectionHorizontal) {
             rowHeight = FSCalendarFloor(rowHeight*2)*0.5; // Round to nearest multiple of 0.5. e.g. (16.8->16.5),(16.2->16.0)
         }
-        
+
         self.calendarHeaderView.frame = CGRectMake(0, 0, self.fs_width, headerHeight);
         self.calendarWeekdayView.frame = CGRectMake(0, self.calendarHeaderView.fs_bottom, self.contentView.fs_width, weekdayHeight);
 
@@ -360,25 +360,25 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
                 }
             }
         } else {
-            
+
             CGFloat contentHeight = _contentView.fs_height;
             _daysContainer.frame = CGRectMake(0, 0, self.fs_width, contentHeight);
             _collectionView.frame = _daysContainer.bounds;
-            
+
         }
         [_collectionViewLayout invalidateLayout];
 
         _topBorder.frame = CGRectMake(0, -1, self.fs_width, 1);
         _bottomBorder.frame = CGRectMake(0, self.fs_height, self.fs_width, 1);
         _scopeHandle.fs_bottom = _bottomBorder.fs_top;
-        
+
     }
-    
+
     if (_needsLayoutForWeekMode) {
         _needsLayoutForWeekMode = NO;
         [self.transitionCoordinator performScopeTransitionFromScope:FSCalendarScopeMonth toScope:FSCalendarScopeWeek animated:NO];
     }
-    
+
 }
 
 #if TARGET_INTERFACE_BUILDER
@@ -413,7 +413,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
     CGFloat weekdayHeight = self.preferredWeekdayHeight;
     CGFloat rowHeight = self.preferredRowHeight;
     CGFloat paddings = self.collectionViewLayout.sectionInsets.top + self.collectionViewLayout.sectionInsets.bottom;
-    
+
     if (!self.floatingMode) {
         switch (scope) {
             case FSCalendarScopeMonth: {
@@ -461,7 +461,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     FSCalendarMonthPosition monthPosition = [self.calculator monthPositionForIndexPath:indexPath];
-    
+
     switch (self.placeholderType) {
         case FSCalendarPlaceholderTypeNone: {
             if (self.transitionCoordinator.representingScope == FSCalendarScopeMonth && monthPosition != FSCalendarMonthPositionCurrent) {
@@ -481,7 +481,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
             break;
         }
     }
-    
+
     NSDate *date = [self.calculator dateForIndexPath:indexPath];
     FSCalendarCell *cell = [self.dataSourceProxy calendar:self cellForDate:date atMonthPosition:monthPosition];
     if (!cell) {
@@ -576,11 +576,11 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
     }
     cell.selected = NO;
     [cell configureAppearance];
-    
+
     [_selectedDates removeObject:selectedDate];
     [self.delegateProxy calendar:self didDeselectDate:selectedDate atMonthPosition:monthPosition];
     [self deselectCounterpartDate:selectedDate];
-    
+
 }
 
 - (void)collectionView:(UICollectionView *)collectionView willDisplayCell:(UICollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath
@@ -620,14 +620,14 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
                 currentPage = significantHeader.month;
             }
         }
-        
+
         if (![self.gregorian isDate:currentPage equalToDate:_currentPage toUnitGranularity:NSCalendarUnitMonth]) {
             [self willChangeValueForKey:@"currentPage"];
             _currentPage = currentPage;
             [self.delegateProxy calendarCurrentPageDidChange:self];
             [self didChangeValueForKey:@"currentPage"];
         }
-        
+
     } else if (self.hasValidateVisibleLayout) {
         CGFloat scrollOffset = 0;
         switch (_collectionViewLayout.scrollDirection) {
@@ -640,7 +640,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
                 break;
             }
         }
-        _calendarHeaderView.scrollOffset = scrollOffset;
+        // _calendarHeaderView.scrollOffset = scrollOffset;
     }
 }
 
@@ -662,7 +662,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
             break;
         }
     }
-    
+
     NSInteger sections = lrint(targetOffset/contentSize);
     NSDate *targetPage = nil;
     switch (_scope) {
@@ -688,14 +688,14 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
         }
         [self didChangeValueForKey:@"currentPage"];
     }
-    
+
     // Disable all inner gestures to avoid missing event
     [scrollView.gestureRecognizers enumerateObjectsUsingBlock:^(__kindof UIGestureRecognizer * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if (obj != scrollView.panGestureRecognizer) {
             obj.enabled = NO;
         }
     }];
-    
+
 }
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
@@ -728,9 +728,9 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
 {
     if (_scrollDirection != scrollDirection) {
         _scrollDirection = scrollDirection;
-        
+
         if (self.floatingMode) return;
-        
+
         switch (_scope) {
             case FSCalendarScopeMonth: {
                 _collectionViewLayout.scrollDirection = (UICollectionViewScrollDirection)scrollDirection;
@@ -918,7 +918,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
 {
     if (_pagingEnabled != pagingEnabled) {
         _pagingEnabled = pagingEnabled;
-        
+
         [self invalidateLayout];
     }
 }
@@ -927,10 +927,10 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
 {
     if (_scrollEnabled != scrollEnabled) {
         _scrollEnabled = scrollEnabled;
-        
+
         _collectionView.scrollEnabled = scrollEnabled;
         _calendarHeaderView.scrollEnabled = scrollEnabled;
-        
+
         [self invalidateLayout];
     }
 }
@@ -939,7 +939,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
 {
     if (_orientation != orientation) {
         _orientation = orientation;
-        
+
         _needsAdjustingViewFrame = YES;
         _preferredWeekdayHeight = FSCalendarAutomaticDimension;
         _preferredRowHeight = FSCalendarAutomaticDimension;
@@ -1090,14 +1090,14 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
 {
     if (self.floatingMode) return;
     if (self.transitionCoordinator.state != FSCalendarTransitionStateIdle) return;
-    
+
     FSCalendarScope prevScope = _scope;
     [self willChangeValueForKey:@"scope"];
     _scope = scope;
     [self didChangeValueForKey:@"scope"];
-    
+
     if (prevScope == scope) return;
-    
+
     if (!self.hasValidateVisibleLayout && prevScope == FSCalendarScopeMonth && scope == FSCalendarScopeWeek) {
         _needsLayoutForWeekMode = YES;
         [self setNeedsLayout];
@@ -1153,14 +1153,14 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
 - (void)selectDate:(NSDate *)date scrollToDate:(BOOL)scrollToDate atMonthPosition:(FSCalendarMonthPosition)monthPosition
 {
     if (!self.allowsSelection || !date) return;
-        
+
     [self requestBoundingDatesIfNecessary];
-    
+
     FSCalendarAssertDateInBounds(date,self.gregorian,self.minimumDate,self.maximumDate);
-    
+
     NSDate *targetDate = [self.gregorian dateBySettingHour:0 minute:0 second:0 ofDate:date options:0];
     NSIndexPath *targetIndexPath = [self.calculator indexPathForDate:targetDate];
-    
+
     BOOL shouldSelect = YES;
     // 跨月份点击
     if (monthPosition==FSCalendarMonthPositionPrevious||monthPosition==FSCalendarMonthPositionNext) {
@@ -1195,7 +1195,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
                 return;
             }
         }
-        
+
     } else if (![self isDateSelected:targetDate]){
         if (self.selectedDate && !self.allowsMultipleSelection) {
             [self deselectDate:self.selectedDate];
@@ -1205,11 +1205,11 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
         [cell performSelecting];
         [self enqueueSelectedDate:targetDate];
         [self selectCounterpartDate:targetDate];
-        
+
     } else if (![_collectionView.indexPathsForSelectedItems containsObject:targetIndexPath]) {
         [_collectionView selectItemAtIndexPath:targetIndexPath animated:NO scrollPosition:UICollectionViewScrollPositionNone];
     }
-    
+
     if (scrollToDate) {
         if (!shouldSelect) {
             return;
@@ -1236,10 +1236,10 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
         return;
     }
     animated &= _scrollEnabled; // No animation if _scrollEnabled == NO;
-    
+
     date = [self.calculator safeDateForDate:date];
     NSInteger scrollOffset = [self.calculator indexPathForDate:date atMonthPosition:FSCalendarMonthPositionCurrent].section;
-    
+
     if (!self.floatingMode) {
         switch (_collectionViewLayout.scrollDirection) {
             case UICollectionViewScrollDirectionVertical: {
@@ -1251,7 +1251,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
                 break;
             }
         }
-        
+
     } else {
         if (self.hasValidateVisibleLayout) {
             [_collectionViewLayout layoutAttributesForElementsInRect:_collectionView.bounds];
@@ -1262,7 +1262,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
             _currentPage = date;
             [self setNeedsLayout];
         }
-        
+
     }
     if (!animated) {
         self.calendarHeaderView.scrollOffset = scrollOffset;
@@ -1276,7 +1276,7 @@ typedef NS_ENUM(NSUInteger, FSCalendarOrientation) {
         date = [self.calculator safeDateForDate:date];
         if (!date) return;
     }
-    
+
     if (!self.floatingMode) {
         if ([self isDateInDifferentPage:date]) {
             [self willChangeValueForKey:@"currentPage"];
@@ -1415,24 +1415,24 @@ void FSCalendarRunLoopCallback(CFRunLoopObserverRef observer, CFRunLoopActivity 
 - (void)invalidateLayout
 {
     if (!self.floatingMode) {
-        
+
         if (!_calendarHeaderView) {
-            
+
             FSCalendarHeaderView *headerView = [[FSCalendarHeaderView alloc] initWithFrame:CGRectZero];
             headerView.calendar = self;
             headerView.scrollEnabled = _scrollEnabled;
             [_contentView addSubview:headerView];
             self.calendarHeaderView = headerView;
-            
+
         }
-        
+
         if (!_calendarWeekdayView) {
             FSCalendarWeekdayView *calendarWeekdayView = [[FSCalendarWeekdayView alloc] initWithFrame:CGRectZero];
             calendarWeekdayView.calendar = self;
             [_contentView addSubview:calendarWeekdayView];
             _calendarWeekdayView = calendarWeekdayView;
         }
-        
+
         if (_scrollEnabled) {
             if (!_deliver) {
                 FSCalendarHeaderTouchDeliver *deliver = [[FSCalendarHeaderTouchDeliver alloc] initWithFrame:CGRectZero];
@@ -1444,7 +1444,7 @@ void FSCalendarRunLoopCallback(CFRunLoopObserverRef observer, CFRunLoopActivity 
         } else if (_deliver) {
             [_deliver removeFromSuperview];
         }
-        
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         if (self.showsScopeHandle) {
@@ -1464,22 +1464,22 @@ void FSCalendarRunLoopCallback(CFRunLoopObserverRef observer, CFRunLoopActivity 
             }
         }
 #pragma GCC diagnostic pop
-        
+
         _collectionView.pagingEnabled = YES;
         _collectionViewLayout.scrollDirection = (UICollectionViewScrollDirection)self.scrollDirection;
-        
+
     } else {
-        
+
         [self.calendarHeaderView removeFromSuperview];
         [self.deliver removeFromSuperview];
         [self.calendarWeekdayView removeFromSuperview];
         [self.scopeHandle removeFromSuperview];
-        
+
         _collectionView.pagingEnabled = NO;
         _collectionViewLayout.scrollDirection = UICollectionViewScrollDirectionVertical;
-        
+
     }
-    
+
     _preferredHeaderHeight = FSCalendarAutomaticDimension;
     _preferredWeekdayHeight = FSCalendarAutomaticDimension;
     _preferredRowHeight = FSCalendarAutomaticDimension;
@@ -1497,14 +1497,14 @@ void FSCalendarRunLoopCallback(CFRunLoopObserverRef observer, CFRunLoopActivity 
 {
 #define FSCalendarInvalidateCellAppearance(SEL1,SEL2) \
     cell.SEL1 = [self.delegateProxy calendar:self appearance:self.appearance SEL2:date];
-    
+
 #define FSCalendarInvalidateCellAppearanceWithDefault(SEL1,SEL2,DEFAULT) \
     if ([self.delegateProxy respondsToSelector:@selector(calendar:appearance:SEL2:)]) { \
         cell.SEL1 = [self.delegateProxy calendar:self appearance:self.appearance SEL2:date]; \
     } else { \
         cell.SEL1 = DEFAULT; \
     }
-    
+
     FSCalendarInvalidateCellAppearance(preferredFillDefaultColor,fillDefaultColorForDate);
     FSCalendarInvalidateCellAppearance(preferredFillSelectionColor,fillSelectionColorForDate);
     FSCalendarInvalidateCellAppearance(preferredTitleDefaultColor,titleDefaultColorForDate);
@@ -1528,13 +1528,13 @@ void FSCalendarRunLoopCallback(CFRunLoopObserverRef observer, CFRunLoopActivity 
     if (cell.image) {
         FSCalendarInvalidateCellAppearanceWithDefault(preferredImageOffset,imageOffsetForDate,CGPointInfinity);
     }
-    
+
 #undef FSCalendarInvalidateCellAppearance
 #undef FSCalendarInvalidateCellAppearanceWithDefault
-    
+
     [cell configureAppearance];
     [cell setNeedsLayout];
-    
+
 }
 
 - (void)reloadDataForCell:(FSCalendarCell *)cell atIndexPath:(NSIndexPath *)indexPath
@@ -1570,7 +1570,7 @@ void FSCalendarRunLoopCallback(CFRunLoopObserverRef observer, CFRunLoopActivity 
         [_collectionView deselectItemAtIndexPath:indexPath animated:NO];
     }
     [cell configureAppearance];
-    
+
 }
 
 - (void)reloadVisibleCells
@@ -1609,7 +1609,7 @@ void FSCalendarRunLoopCallback(CFRunLoopObserverRef observer, CFRunLoopActivity 
         default:
             break;
     }
-   
+
 }
 
 - (void)selectCounterpartDate:(NSDate *)date
@@ -1626,12 +1626,12 @@ void FSCalendarRunLoopCallback(CFRunLoopObserverRef observer, CFRunLoopActivity 
     }
     if (cell) {
         cell.selected = YES;
-        if (self.collectionView.allowsMultipleSelection) {   
+        if (self.collectionView.allowsMultipleSelection) {
             [self.collectionView selectItemAtIndexPath:[self.collectionView indexPathForCell:cell] animated:NO scrollPosition:UICollectionViewScrollPositionNone];
         }
     }
     [cell configureAppearance];
-    
+
 }
 
 - (void)deselectCounterpartDate:(NSDate *)date
@@ -1671,14 +1671,14 @@ void FSCalendarRunLoopCallback(CFRunLoopObserverRef observer, CFRunLoopActivity 
 - (void)invalidateViewFrames
 {
     _needsAdjustingViewFrame = YES;
-    
+
     _preferredHeaderHeight  = FSCalendarAutomaticDimension;
     _preferredWeekdayHeight = FSCalendarAutomaticDimension;
     _preferredRowHeight     = FSCalendarAutomaticDimension;
-    
+
     [self.calendarHeaderView setNeedsAdjustingViewFrame:YES];
     [self setNeedsLayout];
-    
+
 }
 
 // The best way to detect orientation
