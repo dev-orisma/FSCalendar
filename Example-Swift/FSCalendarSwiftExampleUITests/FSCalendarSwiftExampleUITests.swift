@@ -9,33 +9,24 @@
 import XCTest
 
 class FSCalendarSwiftExampleUITests: XCTestCase {
-        
+    
+    // MARK: - Setup / Tear Down
+    
     override func setUp() {
         super.setUp()
         
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-        
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-        // UI tests must launch the application that they test. Doing this in setup will make sure it happens for each test method.
         XCUIApplication().launch()
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
     }
     
     override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
         super.tearDown()
     }
     
-    func testExample() {
-        self.doTestDIY()
-        self.doTestScope()
-        self.doTestDelegateAppearance()
-        self.doTestInterfaceBuilder()
-    }
     
-    func doTestDIY() {
+    // MARK: - Tests
+    
+    func testDIY() {
         let application = XCUIApplication()
         application.tables.element(boundBy: 0).staticTexts["DIY"].tap()
         let calendar: XCUIElement = application.otherElements["calendar"]
@@ -53,7 +44,7 @@ class FSCalendarSwiftExampleUITests: XCTestCase {
         application.buttons.element(boundBy: 0).tap()
     }
     
-    func doTestDelegateAppearance() {
+    func testDelegateAppearance() {
         let application = XCUIApplication()
         application.tables.element(boundBy: 0).staticTexts["Delegate Appearance"].tap()
         
@@ -74,7 +65,7 @@ class FSCalendarSwiftExampleUITests: XCTestCase {
             CGVector(dx:4.5*columnWidth, dy:cellStart+rowHeight*3.5),
             CGVector(dx:0.5*columnWidth, dy:cellStart+rowHeight*4.5),
             CGVector(dx:5.5*columnWidth, dy:cellStart+rowHeight*5.5),
-        ]
+            ]
         vectors.forEach { (vector) in
             calendar.coordinate(withNormalizedOffset: vector).tap()
         }
@@ -88,7 +79,7 @@ class FSCalendarSwiftExampleUITests: XCTestCase {
         application.buttons.element(boundBy: 0).tap()
     }
     
-    func doTestScope() {
+    func testScope() {
         let application = XCUIApplication()
         application.tables.element(boundBy: 0).staticTexts["FSCalendarScope"].tap()
         let tableView: XCUIElement = application.tables.element(boundBy: 0)
@@ -102,20 +93,19 @@ class FSCalendarSwiftExampleUITests: XCTestCase {
         tableView.swipeDown()
         // Orientation Test
         Thread.sleep(forTimeInterval: 0.5)
-        XCUIDevice.shared().orientation = .landscapeLeft
+        XCUIDevice.shared.orientation = .landscapeLeft
         Thread.sleep(forTimeInterval: 1.5)
-        XCUIDevice.shared().orientation = .portrait
+        XCUIDevice.shared.orientation = .portrait
         Thread.sleep(forTimeInterval: 1.5)
-        XCUIDevice.shared().orientation = .landscapeRight
+        XCUIDevice.shared.orientation = .landscapeRight
         Thread.sleep(forTimeInterval: 1.5)
-        XCUIDevice.shared().orientation = .portrait
+        XCUIDevice.shared.orientation = .portrait
         // Exit
         Thread.sleep(forTimeInterval: 1.5)
         application.buttons.element(boundBy: 0).tap()
     }
-
-    func doTestInterfaceBuilder() {
-        
+    
+    func testInterfaceBuilder() {
         let application = XCUIApplication()
         application.tables.element(boundBy: 0).staticTexts["Interface Builder"].tap()
         let calendar = application.otherElements["calendar"]
@@ -123,18 +113,18 @@ class FSCalendarSwiftExampleUITests: XCTestCase {
         let cellStart: CGFloat = (FSCalendarStandardHeaderHeight+FSCalendarStandardWeekdayHeight)/calendarHeight
         let rowHeight: CGFloat = (1.0-cellStart)/6.0
         let columnWidth: CGFloat = 1.0/7
-    
-        let nextVector = CGVector(dx: columnWidth.multiplied(by: 5.5), dy: cellStart+rowHeight.multiplied(by: 5.5))
-        let prevVector = CGVector(dx: columnWidth.multiplied(by: 1.5), dy: cellStart+rowHeight.multiplied(by: 0.5))
+        
+        let nextVector = CGVector(dx: columnWidth*5.5, dy: cellStart+rowHeight*5.5)
+        let prevVector = CGVector(dx: columnWidth*1.5, dy: cellStart+rowHeight*0.5)
         calendar.coordinate(withNormalizedOffset: nextVector).tap()
         calendar.coordinate(withNormalizedOffset: nextVector).tap()
         calendar.coordinate(withNormalizedOffset: prevVector).tap()
         calendar.coordinate(withNormalizedOffset: prevVector).tap()
         Thread.sleep(forTimeInterval: 1.0)
         
-        let vector1 = CGVector(dx: columnWidth.multiplied(by: 3.5), dy: cellStart+rowHeight.multiplied(by: 2.5))
-        let vector2 = CGVector(dx: columnWidth.multiplied(by: 4.5), dy: cellStart+rowHeight.multiplied(by: 2.5))
-        let configButton = application.buttons.element(boundBy: 2)
+        let vector1 = CGVector(dx: columnWidth*3.5, dy: cellStart+rowHeight*2.5)
+        let vector2 = CGVector(dx: columnWidth*4.5, dy: cellStart+rowHeight*2.5)
+        let configButton = application.buttons.element(boundBy: 1)
         
         configButton.tap()
         application.staticTexts["Theme2"].tap()
@@ -177,38 +167,57 @@ class FSCalendarSwiftExampleUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 0.5)
         
         configButton.tap()
-        application.tables.element(boundBy: 0).swipeUp()
-        application.tables.staticTexts["Monday"].tap()
+        let table = application.tables.element(boundBy: 0)
+        let monday = application.tables.staticTexts["Monday"]
+        swipeUpUntilElementIsVisible(table: table, element: monday)
+        monday.tap()
+        
         calendar.swipeUp()
         calendar.swipeDown()
         Thread.sleep(forTimeInterval: 0.5)
         
         configButton.tap()
-        application.tables.element(boundBy: 0).swipeUp()
-        application.tables.staticTexts["Tuesday"].tap()
+        let tuesday = application.tables.staticTexts["Tuesday"]
+        swipeUpUntilElementIsVisible(table: table, element: tuesday)
+        tuesday.tap()
+        
         calendar.swipeUp()
         calendar.swipeDown()
         Thread.sleep(forTimeInterval: 0.5)
         
         configButton.tap()
-        application.tables.element(boundBy: 0).swipeUp()
-        application.tables.staticTexts["Sunday"].tap()
+        let sunday = application.tables.staticTexts["Sunday"]
+        swipeUpUntilElementIsVisible(table: table, element: sunday)
+        sunday.tap()
+        
         calendar.swipeUp()
         calendar.swipeDown()
         Thread.sleep(forTimeInterval: 1.5)
         
         // Orientation Test
-        XCUIDevice.shared().orientation = .landscapeLeft
+        XCUIDevice.shared.orientation = .landscapeLeft
         Thread.sleep(forTimeInterval: 1.5)
-        XCUIDevice.shared().orientation = .portrait
+        XCUIDevice.shared.orientation = .portrait
         Thread.sleep(forTimeInterval: 1.5)
-        XCUIDevice.shared().orientation = .landscapeRight
+        XCUIDevice.shared.orientation = .landscapeRight
         Thread.sleep(forTimeInterval: 1.5)
-        XCUIDevice.shared().orientation = .portrait
+        XCUIDevice.shared.orientation = .portrait
         
         // Exit
         Thread.sleep(forTimeInterval: 1.0)
         application.buttons.element(boundBy: 0).tap()
-        
+    }
+    
+    
+    // MARK: - Helper Methods
+    
+    private let maxSwipes = 5
+    
+    private func swipeUpUntilElementIsVisible(table: XCUIElement, element: XCUIElement) {
+        var swipes = 0
+        while !element.exists && swipes < maxSwipes {
+            table.swipeUp()
+            swipes += 1
+        }
     }
 }
